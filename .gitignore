@@ -33,6 +33,7 @@ Thumbs.db
 *.db-wal
 uploads/
 
-# ML artifacts & datasets (never commit trained models or patient data)
-models/
+# Datasets & raw patient data (never commit)
 data/
+
+# Backend trained-model artifacts ARE committed (small, public UCI dataset)
