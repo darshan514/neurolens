@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AppUser } from "./types";
-import { apiRequest, setToken, getToken, isApiAvailable, invalidateHealth } from "./api";
+import { apiRequest, setToken, getToken, isApiAvailable, invalidateHealth, ApiError } from "./api";
 
 const STORAGE_KEY = "nl_user";
 
@@ -71,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(res.access_token);
         return persist(toAppUser(res.user));
       } catch (err) {
+        // A real API rejection (wrong password, unknown account) is an error,
+        // not a reason to silently log the user into demo mode.
+        if (err instanceof ApiError && err.status !== 0) throw err;
         console.warn("API login failed, using demo mode:", err);
         invalidateHealth();
       }
@@ -89,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(res.access_token);
         return persist(toAppUser(res.user));
       } catch (err) {
+        if (err instanceof ApiError && err.status !== 0) throw err;
         console.warn("Google login failed, using demo mode:", err);
         invalidateHealth();
       }
@@ -107,6 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(res.access_token);
         return persist(toAppUser(res.user));
       } catch (err) {
+        // Duplicate email, invalid input etc. must surface — not demo login.
+        if (err instanceof ApiError && err.status !== 0) throw err;
         console.warn("API register failed, using demo mode:", err);
         invalidateHealth();
       }
