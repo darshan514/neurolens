@@ -37,3 +37,6 @@ uploads/
 data/
 
 # Backend trained-model artifacts ARE committed (small, public UCI dataset)
+
+# Stray nested repo / user data folder
+parkinsons/
