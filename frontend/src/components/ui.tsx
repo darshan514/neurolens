@@ -125,6 +125,7 @@ export function Badge({
 }
 
 export function RiskBadge({ risk }: { risk: RiskLevel }) {
+  if (risk === "No data") return <Badge tone="slate">No data yet</Badge>;
   const tone = risk === "Low" ? "teal" : risk === "Moderate" ? "amber" : "rose";
   return <Badge tone={tone}>{risk} risk</Badge>;
 }

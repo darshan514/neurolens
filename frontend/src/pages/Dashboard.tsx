@@ -35,7 +35,10 @@ export default function Dashboard() {
     (current.domainScores.tap + current.domainScores.spiral) / 2
   );
   const delta = current.overall - baseline.overall;
-  const risk = current.overall >= 65 ? "Low" : current.overall >= 45 ? "Moderate" : "High";
+  // No screening completed yet — show a neutral "no data" state, never a
+  // misleading "High risk" rating for a score of 0.
+  const hasData = history.length > 0 && current.overall > 0;
+  const risk = !hasData ? "No data" : current.overall >= 65 ? "Low" : current.overall >= 45 ? "Moderate" : "High";
 
   const tiles: Array<{ id: string; label: string; icon: ReactNode; key: TestId }> = [
     { id: "voice", label: t("speechScore"), icon: <Mic size={17} />, key: "voice" },
@@ -92,7 +95,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 flex items-center justify-between text-xs text-white/45">
             <span>{t("confidence")}</span>
-            <span className="font-semibold text-white/80">{latest ? latest.confidence : 78}%</span>
+            <span className="font-semibold text-white/80">{latest ? latest.confidence : 0}%</span>
           </div>
         </Card>
 

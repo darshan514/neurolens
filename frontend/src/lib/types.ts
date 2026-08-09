@@ -11,7 +11,7 @@ export type TestId =
   | "reaction"
   | "cognitive";
 
-export type RiskLevel = "Low" | "Moderate" | "High";
+export type RiskLevel = "Low" | "Moderate" | "High" | "No data";
 
 /** 0–100, higher = healthier. */
 export type Score = number;

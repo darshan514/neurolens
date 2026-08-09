@@ -137,56 +137,15 @@ export function getHistory(): ExamReport[] {
   return readJSON<ExamReport[]>(K_RESULTS, []);
 }
 
-// ------------------------------------------------------------- seed data
+// ------------------------------------------------------------ empty state
+// A brand-new user has NO scores until they complete their first test.
+// No seeded/fake data: everything reads from the user's real reports.
 
-function seededTrend(): TrendPoint[] {
-  const today = new Date();
-  const trend: TrendPoint[] = [];
-  const drift: Partial<Record<TestId, number>> = {
-    voice: -1.1,
-    tap: -1.6,
-    spiral: -1.4,
-    tremor: -1.0,
-    walking: -0.8,
-    facial: -0.9,
-    balance: -0.6,
-    reaction: -0.5,
-    cognitive: -0.4,
-  };
-  const base: Record<TestId, number> = {
-    voice: 74,
-    tap: 71,
-    spiral: 73,
-    tremor: 78,
-    walking: 76,
-    facial: 75,
-    balance: 80,
-    reaction: 77,
-    cognitive: 82,
-  };
-  for (let w = 7; w >= 0; w--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - w * 7);
-    const domainScores = {} as Record<TestId, number>;
-    let overall = 0;
-    for (const id of ALL_IDS) {
-      const jitter = (Math.random() - 0.5) * 4;
-      const v = Math.round(Math.max(20, Math.min(98, base[id] + (drift[id] ?? 0) * (7 - w) + jitter)));
-      domainScores[id] = v;
-      overall += v * DOMAIN_WEIGHTS[id];
-    }
-    trend.push({
-      dateISO: d.toISOString(),
-      label: `W${8 - w}`,
-      overall: Math.round(overall),
-      domainScores,
-    });
-  }
-  return trend;
-}
+const ZERO_SCORES = {} as Record<TestId, number>;
+for (const id of ALL_IDS) ZERO_SCORES[id] = 0;
 
 export function getTrend(): TrendPoint[] {
-  return readJSON<TrendPoint[]>("nl_trend", seededTrend());
+  return readJSON<TrendPoint[]>("nl_trend", []);
 }
 
 export function getBaseline(): Baseline {
@@ -195,8 +154,8 @@ export function getBaseline(): Baseline {
   if (!first) {
     return {
       createdAt: new Date().toISOString(),
-      domainScores: {} as Record<TestId, number>,
-      overall: 70,
+      domainScores: { ...ZERO_SCORES },
+      overall: 0,
     };
   }
   return { createdAt: first.dateISO, domainScores: first.domainScores, overall: first.overall };
@@ -205,9 +164,7 @@ export function getBaseline(): Baseline {
 export function getCurrentState(): { overall: number; domainScores: Record<TestId, number> } {
   const latest = getLatestReport();
   if (latest) return { overall: latest.overall, domainScores: latest.domainScores };
-  const trend = getTrend();
-  const last = trend[trend.length - 1];
-  return { overall: last.overall, domainScores: last.domainScores };
+  return { overall: 0, domainScores: { ...ZERO_SCORES } };
 }
 
 // ------------------------------------------------------------- medication
