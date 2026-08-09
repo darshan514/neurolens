@@ -8,7 +8,7 @@ interface AuthCtx {
   user: AppUser | null;
   backend: boolean;
   login: (email: string, password: string) => Promise<AppUser>;
-  loginWithGoogle: () => Promise<AppUser>;
+  loginWithGoogle: (email: string) => Promise<AppUser>;
   register: (name: string, email: string, password: string, role: AppUser["role"]) => Promise<AppUser>;
   logout: () => void;
 }
@@ -76,13 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new ApiError(0, "Server is unreachable — please try again in a moment.");
   };
 
-  const loginWithGoogle = async () => {
-    // Simple Google flow: ask for the Gmail address and save it to the
-    // database exactly like email sign-in (backend /auth/google upserts by
-    // email). No OAuth client needed.
-    const email = (window.prompt("Enter your Gmail address:") ?? "").trim();
-    if (!email) throw new ApiError(400, "Please enter your Gmail address.");
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  const loginWithGoogle = async (email: string) => {
+    // Simple Google flow: the email is supplied via the inline form and
+    // saved to the database exactly like email sign-in (backend /auth/google
+    // upserts by email). No OAuth client needed.
+    const clean = email.trim();
+    if (!clean) throw new ApiError(400, "Please enter your Gmail address.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) {
       throw new ApiError(400, "That doesn't look like a valid email address.");
     }
     if (!(await isApiAvailable())) {
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const res = await apiRequest<TokenResponse>("/auth/google", {
       method: "POST",
-      body: { google_id_token: `simple-${email}`, name: email.split("@")[0] },
+      body: { google_id_token: `simple-${clean}`, name: clean.split("@")[0] },
     });
     setToken(res.access_token);
     return persist(toAppUser(res.user));
