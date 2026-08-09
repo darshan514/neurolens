@@ -164,7 +164,7 @@ export default function Login() {
         </Card>
 
         <p className="mt-4 text-center text-[11px] leading-relaxed text-white/35">
-          Demo mode: any credentials work. JWT authentication connects to the FastAPI backend in production.
+          Sign in with an account you created, or create one above — credentials are validated against the server.
           NeuroLens is a screening aid — it does not diagnose any condition.
         </p>
       </motion.div>

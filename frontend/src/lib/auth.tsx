@@ -44,7 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as AppUser) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as AppUser;
+      // Drop stale demo sessions (e.g. the old hardcoded "Alex Kumar" login)
+      // so users are never silently restored into a fake account.
+      if (parsed.id === "u_demo" || parsed.id.startsWith("demo-")) {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -56,69 +64,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return u;
   };
 
-  const demoUser = (email: string, role: AppUser["role"] = "patient"): AppUser => {
-    const name = email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    return { id: "u_demo", name, email, role, heightCm: 170, preferredLanguage: "en" };
-  };
-
   const login = async (email: string, password: string) => {
     if (await isApiAvailable()) {
-      try {
-        const res = await apiRequest<TokenResponse>("/auth/login", {
-          method: "POST",
-          body: { email, password },
-        });
-        setToken(res.access_token);
-        return persist(toAppUser(res.user));
-      } catch (err) {
-        // A real API rejection (wrong password, unknown account) is an error,
-        // not a reason to silently log the user into demo mode.
-        if (err instanceof ApiError && err.status !== 0) throw err;
-        console.warn("API login failed, using demo mode:", err);
-        invalidateHealth();
-      }
+      const res = await apiRequest<TokenResponse>("/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
+      setToken(res.access_token);
+      return persist(toAppUser(res.user));
     }
-    await new Promise((r) => setTimeout(r, 500));
-    return persist(demoUser(email));
+    throw new ApiError(0, "Server is unreachable — please try again in a moment.");
   };
 
   const loginWithGoogle = async () => {
-    if (await isApiAvailable()) {
-      try {
-        const res = await apiRequest<TokenResponse>("/auth/google", {
-          method: "POST",
-          body: { google_id_token: `demo-${Date.now()}`, name: "Alex Kumar" },
-        });
-        setToken(res.access_token);
-        return persist(toAppUser(res.user));
-      } catch (err) {
-        if (err instanceof ApiError && err.status !== 0) throw err;
-        console.warn("Google login failed, using demo mode:", err);
-        invalidateHealth();
-      }
-    }
-    await new Promise((r) => setTimeout(r, 500));
-    return persist({ ...demoUser("alex.kumar@gmail.com"), name: "Alex Kumar" });
+    // Real Google OAuth isn't configured yet — never fabricate a fake
+    // account (previously this logged everyone in as "Alex Kumar").
+    throw new ApiError(400, "Google sign-in is not set up yet. Use email sign-in for now.");
   };
 
   const register = async (name: string, email: string, password: string, role: AppUser["role"]) => {
     if (await isApiAvailable()) {
-      try {
-        const res = await apiRequest<TokenResponse>("/auth/register", {
-          method: "POST",
-          body: { name, email, password, role },
-        });
-        setToken(res.access_token);
-        return persist(toAppUser(res.user));
-      } catch (err) {
-        // Duplicate email, invalid input etc. must surface — not demo login.
-        if (err instanceof ApiError && err.status !== 0) throw err;
-        console.warn("API register failed, using demo mode:", err);
-        invalidateHealth();
-      }
+      const res = await apiRequest<TokenResponse>("/auth/register", {
+        method: "POST",
+        body: { name, email, password, role },
+      });
+      setToken(res.access_token);
+      return persist(toAppUser(res.user));
     }
-    await new Promise((r) => setTimeout(r, 500));
-    return persist({ ...demoUser(email, role), name });
+    throw new ApiError(0, "Server is unreachable — please try again in a moment.");
   };
 
   const logout = () => {
