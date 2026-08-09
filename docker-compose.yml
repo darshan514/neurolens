@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: neurolens-db
+    environment:
+      POSTGRES_USER: neurolens
+      POSTGRES_PASSWORD: neurolens
+      POSTGRES_DB: neurolens
+    ports:
+      - "5432:5432"
+    volumes:
+      - neurolens_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neurolens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: neurolens-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://neurolens:neurolens@db:5432/neurolens
+      JWT_SECRET: change-me-in-production
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  neurolens_pgdata:

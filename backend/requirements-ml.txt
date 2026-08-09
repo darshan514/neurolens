@@ -1,0 +1,9 @@
+# Optional — heavy ML stack used by app.services.analysis
+numpy>=1.26
+scipy>=1.13
+librosa>=0.10.1
+soundfile>=0.12.1
+# torch>=2.2          # for Wav2Vec2 / HuBERT embeddings
+# transformers>=4.40  # Hugging Face models
+# shap>=0.45          # explainability
+# lime>=0.2.0

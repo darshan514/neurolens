@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Test / coverage
+coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Freebuff runtime state
+.freebuff/
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+uploads/
+
+# ML artifacts & datasets (never commit trained models or patient data)
+models/
+data/
