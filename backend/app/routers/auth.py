@@ -49,13 +49,26 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 
 @router.post("/google", response_model=TokenOut)
 def google_login(body: GoogleLoginIn, db: Session = Depends(get_db)):
-    """Google SSO. The demo frontend sends a mock token; in production,
-    verify `google_id_token` with google-auth and upsert the user."""
-    sub = body.google_id_token[:24]
-    email = f"{sub}@google.demo"
+    """Google SSO: verify the ID token with google-auth and upsert the user."""
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+
+        info = google_id_token.verify_oauth2_token(
+            body.google_id_token, google_requests.Request()
+        )
+    except Exception:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Invalid Google credential"
+        )
+
+    email = (info.get("email") or "").lower()
+    if not email:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Google account has no email")
+    name = body.name or info.get("name") or "Google User"
     user = db.scalar(select(User).where(User.email == email))
     if not user:
-        user = User(email=email, name=body.name or "Google User", role="patient", hashed_password=None)
+        user = User(email=email, name=name, role="patient", hashed_password=None)
         db.add(user)
         db.commit()
         db.refresh(user)

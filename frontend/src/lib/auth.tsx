@@ -77,9 +77,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    // Real Google OAuth isn't configured yet — never fabricate a fake
-    // account (previously this logged everyone in as "Alex Kumar").
-    throw new ApiError(400, "Google sign-in is not set up yet. Use email sign-in for now.");
+    // Real Google OAuth via Google Identity Services when a client ID is
+    // configured (VITE_GOOGLE_CLIENT_ID). Without it, report clearly.
+    const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
+    if (!clientId) {
+      throw new ApiError(400, "Google sign-in is not configured yet. Use email sign-in for now.");
+    }
+
+    // Load GIS only when actually needed.
+    if (!(window as unknown as { google?: { accounts: { id: unknown } } }).google?.accounts?.id) {
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new ApiError(0, "Could not load Google sign-in."));
+        document.head.appendChild(s);
+      });
+    }
+
+    const token = await new Promise<string>((resolve, reject) => {
+      const w = window as unknown as {
+        google?: {
+          accounts: {
+            id: {
+              initialize: (cfg: { client_id: string; callback: (r: { credential: string }) => void }) => void;
+              renderButton: (el: HTMLElement, opts: { theme: string; size: string }) => void;
+              prompt: () => void;
+            };
+          };
+        };
+      };
+      const id = w.google?.accounts?.id;
+      if (!id) {
+        reject(new ApiError(0, "Google sign-in failed to load."));
+        return;
+      }
+      id.initialize({
+        client_id: clientId,
+        callback: (r) => resolve(r.credential),
+      });
+      id.prompt();
+      // GIS popup may not resolve; give the user a clear timeout rather
+      // than hanging forever.
+      setTimeout(() => reject(new ApiError(400, "Google sign-in timed out — try again.")), 60_000);
+    });
+
+    const res = await apiRequest<TokenResponse>("/auth/google", {
+      method: "POST",
+      body: { google_id_token: token, name: undefined },
+    });
+    setToken(res.access_token);
+    return persist(toAppUser(res.user));
   };
 
   const register = async (name: string, email: string, password: string, role: AppUser["role"]) => {

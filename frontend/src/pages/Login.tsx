@@ -44,6 +44,8 @@ export default function Login() {
     try {
       await loginWithGoogle();
       nav(from, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed.");
     } finally {
       setBusy(null);
     }
