@@ -30,7 +30,6 @@ const en: Dict = {
   email: "Email",
   password: "Password",
   name: "Full name",
-  google: "Continue with Google",
   or: "or",
   dashboard: "Dashboard",
   overallRisk: "Overall risk",
