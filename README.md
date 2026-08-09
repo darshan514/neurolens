@@ -104,25 +104,26 @@ examination; family dashboard; neurologist finder; alert center (trend engine + 
 hook); medication effectiveness report; Kannada + Malayalam i18n; research platform;
 model registry; SHAP/LIME hooks; route-level code splitting; CI/CD + deploy config.
 
-**Live right now:**
-- Frontend deployed on Vercel → https://frontend-omega-neon-66.vercel.app (demo mode —
-  backend not yet hosted; local API runs on http://localhost:8000 with PostgreSQL 16)
+**Live right now (full stack):**
+- Frontend on Vercel → https://frontend-omega-neon-66.vercel.app
+- Backend API on Render → https://neurolens-lovt.onrender.com (health: `/api/health`,
+  `ml_ready: true`) — deployed from GitHub (darshan514/neurolens) with auto-deploy on push
 - Real voice model trained on the UCI Parkinson's dataset (patient-level split,
   ROC-AUC 0.66) — `/api/models/voice-predict-full` scores full 22-feature vectors;
   the on-device acoustic subset has no patient-level signal (AUC ~0.50) and the app
   endpoint reports this honestly instead of faking a probability
-- Backend runs on local PostgreSQL 16 (database `neurolens`)
+- Demo backend currently uses SQLite (single free instance) so it runs on Render's
+  no-IPv6 network; switching to Supabase Postgres needs the **pooler connection
+  string** (URI tab → Settings → Database) — the direct `db.*` host is IPv6-only
 - LLM coach wired to Gemini (key is quota-limited — enable billing in Google AI
   Studio; template fallback is automatic)
 
 **Remaining (needs external resources, not code):**
-1. Backend hosting — Render deploys from a GitHub repo or Docker image; create a repo
-   and push (CI + `render.yaml` are ready), or provide a Docker Hub / Fly.io account
-2. Supabase connection string + service role key if you want the cloud DB instead of local PG
-3. More/better training data (mPower, PC-GITA, PPMI) to lift the voice model's AUC
-4. Real Google OAuth / FCM / Maps credentials
-5. Real-device validation (mic, motion sensors, camera) on physical phones
-6. Clinical validation studies and regulatory review (CE/FDA pathway)
+1. Supabase pooler connection string to move the backend off SQLite onto Postgres
+2. More/better training data (mPower, PC-GITA, PPMI) to lift the voice model's AUC
+3. Real Google OAuth / FCM / Maps credentials
+4. Real-device validation (mic, motion sensors, camera) on physical phones
+5. Clinical validation studies and regulatory review (CE/FDA pathway)
 
 > ⚠️ Rotate all API keys/tokens shared in chat (Vercel, Render, Supabase, Gemini).
 
