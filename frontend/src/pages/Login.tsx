@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Brain, Chrome, Loader2 } from "lucide-react";
+import { Brain, Loader2 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { Button, Card, cn } from "../components/ui";
 
 export default function Login() {
-  const { login, loginWithGoogle, register } = useAuth();
+  const { login, register } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const from = (loc.state as { from?: string } | null)?.from ?? "/dashboard";
@@ -16,14 +16,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"patient" | "doctor" | "caregiver">("patient");
-  const [busy, setBusy] = useState<"email" | "google" | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [googleEmail, setGoogleEmail] = useState("");
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setBusy("email");
+    setBusy(true);
     try {
       if (mode === "login") {
         await login(email, password);
@@ -36,29 +35,9 @@ export default function Login() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
-
-  const google = async (e?: FormEvent) => {
-    e?.preventDefault();
-    setError("");
-    if (!googleEmail.trim()) {
-      setGoogleMode(true);
-      return;
-    }
-    setBusy("google");
-    try {
-      await loginWithGoogle(googleEmail);
-      nav(from, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const [googleMode, setGoogleMode] = useState(false);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-950 px-4">
@@ -92,41 +71,6 @@ export default function Login() {
                 {m === "login" ? "Sign in" : "Create account"}
               </button>
             ))}
-          </div>
-
-          <button
-            onClick={() => google()}
-            disabled={busy !== null}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
-          >
-            {busy === "google" ? <Loader2 size={16} className="animate-spin" /> : <Chrome size={16} />}
-            Continue with Google
-          </button>
-
-          {googleMode && (
-            <form onSubmit={google} className="mt-3 space-y-2">
-              <label className="mb-1.5 block text-xs font-medium text-white/60">Your Gmail address</label>
-              <input
-                type="email"
-                autoFocus
-                value={googleEmail}
-                onChange={(e) => setGoogleEmail(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-ink-900/80 px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-brand-400/60"
-                placeholder="you@gmail.com"
-              />
-              <button
-                type="submit"
-                disabled={busy !== null}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-400/40 bg-brand-500/15 py-2.5 text-sm font-medium text-brand-200 hover:bg-brand-500/25 disabled:opacity-50"
-              >
-                {busy === "google" ? <Loader2 size={16} className="animate-spin" /> : <Chrome size={16} />}
-                Sign in with this Gmail
-              </button>
-            </form>
-          )}
-
-          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wider text-white/30">
-            <span className="h-px flex-1 bg-white/10" /> or with email <span className="h-px flex-1 bg-white/10" />
           </div>
 
           <form onSubmit={submit} className="space-y-3.5">
@@ -189,8 +133,8 @@ export default function Login() {
 
             {error && <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{error}</p>}
 
-            <Button type="submit" disabled={busy !== null} className="w-full">
-              {busy === "email" ? <Loader2 size={16} className="animate-spin" /> : null}
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? <Loader2 size={16} className="animate-spin" /> : null}
               {mode === "login" ? "Sign in" : "Create account"}
             </Button>
           </form>
