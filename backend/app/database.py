@@ -24,8 +24,9 @@ def _ipv4_hostaddr(url: str) -> str | None:
         return None
 
 
-_connect_args: dict = {"sslmode": "require", "connect_timeout": 15}
+_connect_args: dict = {}
 if settings.database_url.startswith("postgresql+psycopg:"):
+    _connect_args = {"sslmode": "require", "connect_timeout": 15}
     addr = _ipv4_hostaddr(settings.database_url)
     if addr:
         _connect_args["hostaddr"] = addr
